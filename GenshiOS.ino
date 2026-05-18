@@ -38,14 +38,20 @@ void loop() {
       if (c == '\n' || c == '\r') {
         if (command == "help") {
           Serial.println(command);
-          Serial.print("##How to use GenshiOS##");
-          Serial.print("");
-          command = "";
-          Serial.print("#Apps#");
-          Serial.println("");
-          Serial.print("If you enter 'cal' in the command line, the calculator will start.");
+          Serial.println("=======================================");
+          Serial.println("         GenshiOS Help Menu            ");
+          Serial.println("=======================================");
+          Serial.println("# Available Commands #");
+          Serial.println("  help      - Show this help menu");
+          Serial.println("  cal       - Start the calculator");
+          Serial.println("  memo      - Open System Memo (Create scripts)");
+          Serial.println("  ls        - List files in system storage");
+          Serial.println("  cat       - Read text file contents");
+          Serial.println("  run [f]   - Execute a GenshiScript (.gns)");
+          Serial.println("=======================================");
           Serial.println();
           Serial.print(" > ");
+          command = "";
         }
         else if (command == "cal") {
           Serial.println(command);
