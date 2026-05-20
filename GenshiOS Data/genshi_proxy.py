@@ -9,7 +9,6 @@ from bs4 import BeautifulSoup
 PORT = '/dev/cu.usbserial-A5069RR4'
 BAUD = 2000000
 SCREEN_WIDTH = 45
-
 def gui_to_tui_converter(url):
     """
     Webサイト(GUI)を解析して、綺麗なTUIテキストに自動変換するコアエンジン
