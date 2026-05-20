@@ -59,7 +59,8 @@ void loop() {
         Serial.println(F("  run [f]   - Execute a GenshiScript (.gns)"));
         Serial.println(F("  pi        - Run Monte Carlo Pi Benchmark"));
         Serial.println(F("  fps       - Run Graphical Rendering Benchmark")); 
-        Serial.println(F("  all_bench - Run Full Suite Benchmark")); 
+        Serial.println(F("  all       - Run Full Suite Benchmark")); 
+        Serial.println(F("  game      - Launch Realtime TUI Game Engine"));
         Serial.println(F("======================================="));
         Serial.println();
         Serial.print(F(" > "));
@@ -95,16 +96,46 @@ void loop() {
         command = "";
         run_fps_benchmark();
       }
-      else if (command == "all_bench"){ 
+      else if (command == "all"){ 
         Serial.println(command);
         command = "";
         run_total_benchmark();
+      }
+      else if (command == "game"){ 
+        Serial.println(command);
+        command = "";
+        game_invader();
       }
       else if (command.startsWith("run ")) {
         Serial.println(command); 
         String target_file = command.substring(4); 
         target_file.trim();
         run_executable(target_file); 
+        command = "";
+      }
+      else if (command.startsWith("wget ")) {
+        Serial.println(command); 
+        String target = command.substring(5); 
+        target.trim();
+        Serial.print(F("__NET_REQ:"));
+        Serial.print(target);
+        Serial.println(F("__"));
+        Serial.println(F("[GenshiOS_NET] Connecting to proxy..."));
+        unsigned long netTimeout = millis();
+        while (millis() - netTimeout < 5000) {
+          if (Serial.available() > 0) {
+            String res = Serial.readStringUntil('\n');
+            res.trim();
+            if (res == "__NET_END__") {
+              break;
+            }
+            Serial.println(res);
+            netTimeout = millis();
+          }
+        }
+        Serial.println(F("[GenshiOS_NET] Connection closed."));
+        Serial.println();
+        Serial.print(F(" > "));
         command = "";
       }
       else {
@@ -646,4 +677,84 @@ void run_total_benchmark() {
   Serial.print(F(" > "));
   
   while(Serial.available() > 0) Serial.read();
+}
+
+void game_invader() {
+  while(Serial.available() > 0) Serial.read();
+  Serial.println(F("\n======================================="));
+  Serial.println(F("      GenshiOS Realtime TUI Game       "));
+  Serial.println(F("======================================="));
+  Serial.println(F("  Controls: [a] Left  [d] Right  [q] Quit"));
+  Serial.println(F("  Press ANY key to START..."));
+  
+  while(Serial.available() == 0) delay(10);
+  while(Serial.available() > 0) Serial.read();
+
+  const int SCREEN_WIDTH = 20;
+  int playerX = SCREEN_WIDTH / 2;
+  int enemyX = 0;
+  int enemyDirection = 1;
+  unsigned long lastUpdate = 0;
+  unsigned long enemyUpdate = 0;
+  int frameCount = 0;
+  int currentFps = 0;
+  unsigned long fpsTimer = 0;
+  Serial.print(F("\033[2J")); 
+
+  while (true) {
+    unsigned long now = millis();
+    if (Serial.available() > 0) {
+      char input = Serial.read();
+      if (input == 'a' && playerX > 0) {
+        playerX--;
+      }
+      else if (input == 'd' && playerX < SCREEN_WIDTH - 1) {
+        playerX++;
+      }
+      else if (input == 'q') {
+        Serial.print(F("\033[2J"));
+        Serial.println(F("[GAME OVER] Exited by user."));
+        Serial.print(F(" > "));
+        break;
+      }
+    }
+    if (now - enemyUpdate >= 150) {
+      enemyUpdate = now;
+      enemyX += enemyDirection;
+      if (enemyX >= SCREEN_WIDTH - 1 || enemyX <= 0) {
+        enemyDirection *= -1;
+      }
+    }
+
+    if (now - lastUpdate >= 16) {
+      lastUpdate = now;
+      frameCount++;
+      if (now - fpsTimer >= 1000) {
+        currentFps = frameCount;
+        frameCount = 0;
+        fpsTimer = now;
+      }
+      Serial.print(F("\033[H"));
+      Serial.println(F("+----------------------+"));
+      Serial.print(F("| Genshi-Invader v1.0  | FPS: ")); Serial.println(currentFps);
+      Serial.println(F("+----------------------+"));
+      Serial.print(F("|"));
+      for (int i = 0; i < SCREEN_WIDTH; i++) {
+        if (i == enemyX) Serial.print(F("👾"));
+        else Serial.print(F(" "));
+      }
+      Serial.println(F("|"));
+      for (int row = 0; row < 4; row++) {
+        Serial.println(F("|                      |"));
+      }
+      Serial.print(F("|"));
+      for (int i = 0; i < SCREEN_WIDTH; i++) {
+        if (i == playerX) Serial.print(F("▲")); // 自機
+        else Serial.print(F(" "));
+      }
+      Serial.println(F("|"));
+      Serial.println(F("+----------------------+"));
+      Serial.println(F(" [a] Left  [d] Right  [q] Quit"));
+    }
+  }
 }
