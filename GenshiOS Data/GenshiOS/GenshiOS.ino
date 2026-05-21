@@ -106,6 +106,11 @@ void loop() {
         command = "";
         game_invader();
       }
+      else if (command == "mine"){ 
+        Serial.println(command);
+        command = "";
+        game_mine2d(); 
+      }
       else if (command.startsWith("run ")) {
         Serial.println(command); 
         String target_file = command.substring(4); 
@@ -266,7 +271,7 @@ void memo(){
             }
             if (target_index == -1) {
               Serial.println(F("Error: Disk Full! (Max 3 files). Cannot save."));
-            } 
+            }
             else {
               while(Serial.available() > 0) Serial.read(); 
               Serial.print(F("Enter file name > "));
@@ -436,7 +441,6 @@ void run_pi_benchmark() {
     }
   }
   Serial.println(duration_sec);
-  
   Serial.println();
   Serial.println(F("Preparing Benchmark Engine..."));
   delay(500);
@@ -749,12 +753,110 @@ void game_invader() {
       }
       Serial.print(F("|"));
       for (int i = 0; i < SCREEN_WIDTH; i++) {
-        if (i == playerX) Serial.print(F("▲")); // 自機
+        if (i == playerX) Serial.print(F("▲"));
         else Serial.print(F(" "));
       }
       Serial.println(F("|"));
       Serial.println(F("+----------------------+"));
       Serial.println(F(" [a] Left  [d] Right  [q] Quit"));
+    }
+  }
+}
+
+void game_mine2d() {
+  while(Serial.available() > 0) Serial.read();
+
+  Serial.println(F("\n======================================="));
+  Serial.println(F("       GenshiOS Genshi-Craft 2D        "));
+  Serial.println(F("======================================="));
+  Serial.println(F("  [a] Left  [d] Right  [s] Dig  [w] Build"));
+  Serial.println(F("  Press ANY key to START..."));
+  
+  while(Serial.available() == 0) delay(10);
+  while(Serial.available() > 0) Serial.read();
+  const int MAP_HEIGHT = 8;
+  const int MAP_WIDTH = 20;
+  byte world[MAP_HEIGHT][MAP_WIDTH] = {
+    {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+    {0,0,0,0,0,0,0,0,3,0,0,0,0,0,0,0,0,0,0,0},
+    {0,0,0,0,0,0,0,0,3,0,0,0,0,0,0,0,0,0,0,0},
+    {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+    {2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2},
+    {2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2},
+    {2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2},
+    {2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2}
+  };
+
+  int playerX = 2;
+  int playerY = 2;
+  int inventory = 0;
+  unsigned long lastRender = 0;
+
+  Serial.print(F("\033[2J"));
+
+  while (true) {
+    if (playerY < MAP_HEIGHT - 1 && world[playerY + 1][playerX] == 0) {
+      playerY++;
+      delay(100);
+    }
+
+    if (Serial.available() > 0) {
+      char input = Serial.read();
+      
+      if (input == 'a' && playerX > 0) {
+        if (world[playerY][playerX - 1] == 0) playerX--;
+      }
+      else if (input == 'd' && playerX < MAP_WIDTH - 1) {
+        if (world[playerY][playerX + 1] == 0) playerX++;
+      }
+      else if (input == 's') {
+        if (playerY < MAP_HEIGHT - 1 && world[playerY + 1][playerX] != 0) {
+          world[playerY + 1][playerX] = 0;
+          inventory++;
+        }
+      }
+      else if (input == 'w') {
+        if (inventory > 0 && playerY > 0) {
+          world[playerY][playerX] = 1;
+          playerY--;
+          inventory--;
+        }
+      }
+      else if (input == 'q') {
+        Serial.print(F("\033[2J"));
+        Serial.println(F("[Genshi-Craft] Saved and Exited."));
+        Serial.print(F(" > "));
+        break;
+      }
+    }
+
+    unsigned long now = millis();
+    if (now - lastRender >= 16) {
+      lastRender = now;
+      Serial.print(F("\033[H"));
+
+      Serial.println(F("+---------------------------------------+"));
+      Serial.print(F("| Genshi-Craft 2D v1.0   | Blocks: ")); Serial.print(inventory); Serial.println(F("   |"));
+      Serial.println(F("+---------------------------------------+"));
+
+      for (int y = 0; y < MAP_HEIGHT; y++) {
+        Serial.print(F("|"));
+        for (int x = 0; x < MAP_WIDTH; x++) {
+          if (x == playerX && y == playerY) {
+            Serial.print(F("🏃"));
+          } else {
+            switch (world[y][x]) {
+              case 0: Serial.print(F("  ")); break;
+              case 1: Serial.print(F("土")); break;
+              case 2: Serial.print(F("石")); break;
+              case 3: Serial.print(F("木")); break;
+            }
+          }
+        }
+        Serial.println(F("|"));
+      }
+      Serial.println(F("+---------------------------------------+"));
+      Serial.println(F(" Controls: [a]Left [d]Right [s]Dig [w]Build [q]Quit"));
     }
   }
 }
